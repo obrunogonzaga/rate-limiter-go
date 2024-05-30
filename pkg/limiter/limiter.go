@@ -10,8 +10,8 @@ import (
 )
 
 type Limiter struct {
-	client *redis.Client
-	ctx    context.Context
+	Client *redis.Client
+	Ctx    context.Context
 }
 
 func NewLimiter(redisUrl, redisPort string) *Limiter {
@@ -20,13 +20,13 @@ func NewLimiter(redisUrl, redisPort string) *Limiter {
 	})
 
 	return &Limiter{
-		client: rbr,
-		ctx:    context.Background(),
+		Client: rbr,
+		Ctx:    context.Background(),
 	}
 }
 
 func (l *Limiter) Allow(key string, limit int, blockTime time.Duration) bool {
-	current, err := l.client.Get(l.ctx, key).Int()
+	current, err := l.Client.Get(l.Ctx, key).Int()
 	if err != nil {
 		return l.handleGetError(err, key, blockTime)
 	}
@@ -34,7 +34,7 @@ func (l *Limiter) Allow(key string, limit int, blockTime time.Duration) bool {
 }
 
 func (l *Limiter) IsBlocked(key string) bool {
-	_, err := l.client.Get(l.ctx, key+":block").Result()
+	_, err := l.Client.Get(l.Ctx, key+":block").Result()
 	return !errors.Is(err, redis.Nil)
 }
 
@@ -51,17 +51,17 @@ func (l *Limiter) handleCurrentLimit(current int, key string, limit int, blockTi
 		return l.incrementKeyAndSetExpiry(key, blockTime)
 	}
 	if current >= limit {
-		l.client.Set(l.ctx, key+":block", "blocked", blockTime)
+		l.Client.Set(l.Ctx, key+":block", "blocked", blockTime)
 		return false
 	}
 	return true
 }
 
 func (l *Limiter) incrementKeyAndSetExpiry(key string, blockTime time.Duration) bool {
-	pipeline := l.client.TxPipeline()
-	pipeline.Incr(l.ctx, key)
-	pipeline.Expire(l.ctx, key, blockTime)
-	_, err := pipeline.Exec(l.ctx)
+	pipeline := l.Client.TxPipeline()
+	pipeline.Incr(l.Ctx, key)
+	pipeline.Expire(l.Ctx, key, blockTime)
+	_, err := pipeline.Exec(l.Ctx)
 	if err != nil {
 		log.Printf("Error executing pipeline for key %s: %v", key, err)
 		return false

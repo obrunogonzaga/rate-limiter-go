@@ -13,10 +13,7 @@ import (
 
 func RateLimiterMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		err := godotenv.Load()
-		if err != nil {
-			return
-		}
+		godotenv.Load()
 
 		limitIP := getEnvAsInt("RATE_LIMITER_IP_LIMIT", 5)
 		limitToken := getEnvAsInt("LIMIT_PER_SECOND_TOKEN", 10)
